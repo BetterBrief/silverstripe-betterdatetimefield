@@ -23,6 +23,9 @@ class BetterDatetimeField extends FormField {
 
 	private static
 		$default_config = array(
+			'date_field_classes' => 'date',
+			'time_field_classes' => 'time',
+			'dmy_fields' => true,
 			'hour_interval' => 1,
 			'minute_interval' => 15,
 			'second_interval' => 1,
@@ -98,14 +101,19 @@ class BetterDatetimeField extends FormField {
 	}
 
 	public function setValue($value) {
-		$value = sprintf(
-			'%d-%d-%d %d:%d',
-			$value['Year'],
-			$value['Month'],
-			$value['Day'],
-			$value['Hour'],
-			$value['Minute']
-		);
+		if (!$this->config['dmy_fields']) {
+			Debug::endshow($value);
+		}
+		else {
+			$value = sprintf(
+				'%d-%d-%d %d:%d',
+				$value['Year'],
+				$value['Month'],
+				$value['Day'],
+				$value['Hour'],
+				$value['Minute']
+			);
+		}
 		$return = parent::setValue($value);
 		$this->valueObj = DBField::create_field('SS_Datetime', $value);
 		return $return;
@@ -165,17 +173,6 @@ class BetterDatetimeField extends FormField {
 		}
 	}
 
-	public function getTimeField() {
-		$fields = CompositeField::create(
-			DropdownField::create($this->getName() . '[Hour]', 'Hour', $this->createFieldRange('Hour'), $this->getHour()),
-			DropdownField::create($this->getName() . '[Minute]', 'Minute', $this->createFieldRange('Minute'), $this->getMinute())
-		);
-		if ($this->config['include_seconds']) {
-			$fields->push(DropdownField::create($this->getName() . '[Second]', 'Second', $this->createFieldRange('Second'), $this->getSecond()));
-		}
-		return $fields;
-	}
-
 	private function createFieldRange($fieldName) {
 		if ($fieldName == 'Hour') {
 			$rangeMax = $this->config['24_hr'] ? 23 : 12;
@@ -185,7 +182,11 @@ class BetterDatetimeField extends FormField {
 			$rangeMax = $this->config['max_dropdown_values'][$fieldName];
 			$rangeMin = $this->config['min_dropdown_values'][$fieldName];
 		}
-		$range = range($rangeMin, $rangeMax, $this->config[strtolower($fieldName) . '_interval']);
+		$range = range(
+			$rangeMin,
+			$rangeMax,
+			$this->config[strtolower($fieldName) . '_interval']
+		);
 		foreach ($range as &$val) {
 			if ($val > 9) {
 				break;
@@ -195,7 +196,38 @@ class BetterDatetimeField extends FormField {
 		return $range;
 	}
 
+	public function getTimeField() {
+		$fields = CompositeField::create(
+			DropdownField::create(
+				$this->getName() . '[Hour]', 'Hour',
+				$this->createFieldRange('Hour'),
+				$this->getHour()
+			),
+			DropdownField::create($this->getName() . '[Minute]',
+				'Minute',
+				$this->createFieldRange('Minute'),
+				$this->getMinute()
+			)
+		)->addExtraClass($this->config['time_field_classes']);
+		if ($this->config['include_seconds']) {
+			$fields->push(DropdownField::create(
+				$this->getName() . '[Second]',
+				'Second',
+				$this->createFieldRange('Second'),
+				$this->getSecond()
+			));
+		}
+		return $fields;
+	}
+
 	public function getDateField() {
+		if (!$this->config['dmy_fields']) {
+			return DateField::create(
+				$this->getName() . '[Date]',
+				'',
+				$this->valueObj
+			)->addExtraClass($this->config['date_field_classes']);
+		}
 		$class = $this->config['use_date_dropdown'] ? 'DropdownField' : 'NumericField';
 		$fields = array(
 			'Day' => $class::create($this->getName() . '[Day]', 'Day')
@@ -205,7 +237,9 @@ class BetterDatetimeField extends FormField {
 			'Year' => $class::create($this->getName() . '[Year]', 'Year')
 				->setAttribute('placeholder', 'Year'),
 		);
-		$composite = CompositeField::create()->addExtraClass('date');
+		$composite = CompositeField::create()->addExtraClass(
+			$this->config['date_field_classes']
+		);
 		foreach ($this->config['date_field_order'] as $order) {
 			$field = $fields[$order];
 			if ($this->config['use_date_dropdown']) {
