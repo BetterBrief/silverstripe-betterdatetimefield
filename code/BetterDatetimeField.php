@@ -222,11 +222,11 @@ class BetterDatetimeField extends FormField {
 
 	public function getDateField() {
 		if (!$this->config['dmy_fields']) {
-			return DateField::create(
+			return CompositeField::create(DateField::create(
 				$this->getName() . '[Date]',
 				'',
 				$this->valueObj
-			)->addExtraClass($this->config['date_field_classes']);
+			))->addExtraClass($this->config['date_field_classes']);
 		}
 		$class = $this->config['use_date_dropdown'] ? 'DropdownField' : 'NumericField';
 		$fields = array(
