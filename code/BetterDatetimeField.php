@@ -5,7 +5,7 @@
  *
  * @todo Date picker in the front end
  * @todo Document
- * @todo Validat
+ * @todo Validate
  * @todo Set config via a function, not just through construct
  * @todo Tests
  *
@@ -100,23 +100,93 @@ class BetterDatetimeField extends FormField {
 		return $this;
 	}
 
+	public function validateDateArray($value) {
+		if (!is_array($value)) {
+			return false;
+		}
+		$day = $month = $year = $hour = $min = $second = $period = null;
+		$valid = true;
+		if ($this->getShowDateFields()) {
+			if ($this->config['dmy_fields']) {
+				$day = !empty($value['Day']) ? $value['Day'] : null;
+				$month = !empty($value['Month']) ? $value['Month'] : null;
+				$year = !empty($value['Year']) ? $value['Year'] : null;
+				// Handle people entering "2nd" or "third", or "1st"
+				// and people entering Jan or January instead of 1 or 01
+				if(!is_numeric($day) || !is_numeric($month)) {
+					$timeFormat = "$day $month $year";
+				}
+				if(!isset($timeFormat)) {
+					$timeFormat = "$year-$month-$day";
+				}
+				$strToTime = strtotime($timeFormat);
+				if($strToTime !== false) {
+					list($year, $month, $day) = explode('-', date('Y-m-d', $strToTime), 3);
+				}
+				else {
+					$valid = false;
+				}
+			}
+			else if(!empty($value['Date']) && $strToTime = strtotime($value['Date'])) {
+				list($year, $month, $day) = explode('-', date('Y-m-d', $strToTime), 3);
+			}
+			else {
+				$valid = false;
+			}
+			$valid = $valid && isset($day, $month, $year);
+		}
+		if ($this->getShowTimeFields()) {
+			$hour = !empty($value['Hour']) ? $value['Hour'] : null;
+			$min = !empty($value['Minute']) ? $value['Minute'] : null;
+			if ($this->config['include_seconds']) {
+				$second = !empty($value['Second']) ? $value['Second'] : null;
+			}
+			if (!$this->config['24_hr']) {
+				$period = !empty($value['Period']) ? $value['Period'] : null;
+				$valid = $valid && isset($period);
+			}
+		}
+		if ($period == 'pm') {
+			$hour += 12;
+		}
+		if($valid) {
+			$date = mktime($hour, $min, $second, $month, $day, $year);
+			$valid = $valid && $date !== false;
+			if ($valid) {
+				$date = DBField::create_field('SS_Datetime', $date);
+				$this->valueObj = $date;
+				Debug::dump($date);
+				die;
+			}
+			else {
+				$this->setError(_t($this->class, 'INVALIDDATE', 'Invalid date passed'), 'validation bad');
+			}
+		}
+		return $valid;
+	}
+
 	public function setValue($value) {
+		if (is_array($value)) {
+			$this->validateDateArray($value);
+			//handle the date
+			$day = $value['Day'];
+			$month = $value['Month'];
+			$year = !empty($value['Year']) ? $value['Year'] : null;
+			//handle the time
+				//handle 12 hr time
+				//handle 24 hr time
+			//store as string and as object
+		}
 		if (!$this->config['dmy_fields']) {
 			Debug::endshow($value);
 		}
 		else {
-			$value = sprintf(
-				'%d-%d-%d %d:%d',
-				$value['Year'],
-				$value['Month'],
-				$value['Day'],
-				$value['Hour'],
-				$value['Minute']
-			);
 		}
-		$return = parent::setValue($value);
-		$this->valueObj = DBField::create_field('SS_Datetime', $value);
-		return $return;
+		return parent::setValue($value);
+	}
+
+	public function Value() {
+		return parent::Value();
 	}
 
 	public function getShowTimeFields() {
@@ -138,49 +208,79 @@ class BetterDatetimeField extends FormField {
 	}
 
 	public function getYear() {
-		if ($this->valueObj) {
-			return $this->valueObj->Year();
+		/*if ($this->valueObj) {
+			return $this->valueObj->Format('Y');
+		}
+		else*/if (!empty($this->value['Year'])) {
+			return $this->value['Year'];
 		}
 	}
 
 	public function getMonth() {
-		if ($this->valueObj) {
-			return $this->valueObj->Month();
+		/*if ($this->valueObj) {
+			return $this->valueObj->Format('m');
+		}
+		else*/if (!empty($this->value['Month'])) {
+			return $this->value['Month'];
 		}
 	}
 
 	public function getDay() {
-		if ($this->valueObj) {
-			return $this->valueObj->DayOfMonth();
+		/*if ($this->valueObj) {
+			return $this->valueObj->Format('d');
+		}
+		else*/if (!empty($this->value['Day'])) {
+			return $this->value['Day'];
 		}
 	}
 
 	public function getHour() {
-		if ($this->valueObj) {
-			return $this->valueObj->Format('H');
+		/*if ($this->valueObj) {
+			$format = $this->config['24_hr'] ? 'H' : 'h';
+			return $this->valueObj->Format($format);
+		}
+		else*/if (!empty($this->value['Hour'])) {
+			return $this->value['Hour'];
 		}
 	}
 
 	public function getMinute() {
-		if ($this->valueObj) {
+		/*if ($this->valueObj) {
 			return $this->valueObj->Format('i');
+		}
+		else*/if (!empty($this->value['Minute'])) {
+			return $this->value['Minute'];
 		}
 	}
 
 	public function getSecond() {
-		if ($this->valueObj) {
+		/*if ($this->valueObj) {
 			return $this->valueObj->Format('s');
+		}
+		else*/if (!empty($this->value['Second'])) {
+			return $this->value['Second'];
+		}
+	}
+
+	public function getPeriod() {
+		/*if ($this->valueObj) {
+			return $this->valueObj->Format('a');
+		}
+		else*/if (!empty($this->value['Period'])) {
+			return $this->value['Period'];
 		}
 	}
 
 	private function createFieldRange($fieldName) {
-		if ($fieldName == 'Hour') {
-			$rangeMax = $this->config['24_hr'] ? 23 : 12;
-			$rangeMin = $this->config['24_hr'] ? 0 : 1;
-		}
-		else {
-			$rangeMax = $this->config['max_dropdown_values'][$fieldName];
-			$rangeMin = $this->config['min_dropdown_values'][$fieldName];
+		$rangeMax = $this->config['max_dropdown_values'][$fieldName];
+		$rangeMin = $this->config['min_dropdown_values'][$fieldName];
+		if ($fieldName == 'Hour' && !$this->config['24_hr']) {
+			if ($rangeMax > 12) {
+				$rangeMax = 12;
+			}
+			if ($rangeMin < 1) {
+				$rangeMin = 1;
+			}
 		}
 		$range = range(
 			$rangeMin,
@@ -193,7 +293,7 @@ class BetterDatetimeField extends FormField {
 			}
 			$val = '0' . $val;
 		}
-		return $range;
+		return ArrayLib::valuekey($range);
 	}
 
 	public function getTimeField() {
@@ -215,6 +315,17 @@ class BetterDatetimeField extends FormField {
 				'Second',
 				$this->createFieldRange('Second'),
 				$this->getSecond()
+			));
+		}
+		if (!$this->config['24_hr']) {
+			$fields->push(DropdownField::create(
+				$this->getName() . '[Period]',
+				'Period',
+				array(
+					'am',
+					'pm'
+				),
+				$this->getPeriod()
 			));
 		}
 		return $fields;
