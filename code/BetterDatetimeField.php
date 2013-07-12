@@ -1,5 +1,7 @@
 <?php
 
+require_once 'Zend/Date.php';
+
 /**
  * A better DatetimeField, because the core ones suck
  *
@@ -155,8 +157,6 @@ class BetterDatetimeField extends FormField {
 			if ($valid) {
 				$date = DBField::create_field('SS_Datetime', $date);
 				$this->valueObj = $date;
-				Debug::dump($date);
-				die;
 			}
 			else {
 				$this->setError(_t($this->class, 'INVALIDDATE', 'Invalid date passed'), 'validation bad');
@@ -167,26 +167,29 @@ class BetterDatetimeField extends FormField {
 
 	public function setValue($value) {
 		if (is_array($value)) {
-			$this->validateDateArray($value);
-			//handle the date
-			$day = $value['Day'];
-			$month = $value['Month'];
-			$year = !empty($value['Year']) ? $value['Year'] : null;
-			//handle the time
-				//handle 12 hr time
-				//handle 24 hr time
-			//store as string and as object
+			if($this->validateDateArray($value)) {
+				// valueObj already set
+				return;
+			}
+			else {
+				$this->value = $value;
+			}
 		}
-		if (!$this->config['dmy_fields']) {
-			Debug::endshow($value);
+		elseif($value instanceof SS_Datetime) {
+			$this->valueObj = $value;
 		}
-		else {
-		}
-		return parent::setValue($value);
+	}
+
+	public function setValueFromDateTime($dateTime) {
+		$this->valueObj = $dateTime;
+	}
+
+	public function dataValue() {
+		return $this->valueObj;
 	}
 
 	public function Value() {
-		return parent::Value();
+		return $this->value;
 	}
 
 	public function getShowTimeFields() {
@@ -207,68 +210,42 @@ class BetterDatetimeField extends FormField {
 		return $this;
 	}
 
+	protected function getFallbackKey($name, $format) {
+		if($this->valueObj) {
+			return $this->valueObj->Format($format);
+		}
+		elseif (!empty($this->value[$name])) {
+			return $this->value[$name];
+		}
+	}
+
 	public function getYear() {
-		/*if ($this->valueObj) {
-			return $this->valueObj->Format('Y');
-		}
-		else*/if (!empty($this->value['Year'])) {
-			return $this->value['Year'];
-		}
+		return $this->getFallbackKey('Year', 'Y');
 	}
 
 	public function getMonth() {
-		/*if ($this->valueObj) {
-			return $this->valueObj->Format('m');
-		}
-		else*/if (!empty($this->value['Month'])) {
-			return $this->value['Month'];
-		}
+		return $this->getFallbackKey('Month', 'm');
 	}
 
 	public function getDay() {
-		/*if ($this->valueObj) {
-			return $this->valueObj->Format('d');
-		}
-		else*/if (!empty($this->value['Day'])) {
-			return $this->value['Day'];
-		}
+		return $this->getFallbackKey('Day', 'd');
 	}
 
 	public function getHour() {
-		/*if ($this->valueObj) {
-			$format = $this->config['24_hr'] ? 'H' : 'h';
-			return $this->valueObj->Format($format);
-		}
-		else*/if (!empty($this->value['Hour'])) {
-			return $this->value['Hour'];
-		}
+		$format = $this->config['24_hr'] ? 'H' : 'h';
+		return $this->getFallbackKey('Hour', $format);
 	}
 
 	public function getMinute() {
-		/*if ($this->valueObj) {
-			return $this->valueObj->Format('i');
-		}
-		else*/if (!empty($this->value['Minute'])) {
-			return $this->value['Minute'];
-		}
+		return $this->getFallbackKey('Minute', 'i');
 	}
 
 	public function getSecond() {
-		/*if ($this->valueObj) {
-			return $this->valueObj->Format('s');
-		}
-		else*/if (!empty($this->value['Second'])) {
-			return $this->value['Second'];
-		}
+		return $this->getFallbackKey('Second', 's');
 	}
 
 	public function getPeriod() {
-		/*if ($this->valueObj) {
-			return $this->valueObj->Format('a');
-		}
-		else*/if (!empty($this->value['Period'])) {
-			return $this->value['Period'];
-		}
+		return $this->getFallbackKey('Period', 'a');
 	}
 
 	private function createFieldRange($fieldName) {
@@ -333,10 +310,14 @@ class BetterDatetimeField extends FormField {
 
 	public function getDateField() {
 		if (!$this->config['dmy_fields']) {
+			$zDate = null;
+			if($this->valueObj instanceof SS_Datetime) {
+				$zDate = new Zend_Date($this->valueObj->Format('U'));
+			}
 			return CompositeField::create(DateField::create(
 				$this->getName() . '[Date]',
 				'',
-				$this->valueObj
+				$zDate
 			))->addExtraClass($this->config['date_field_classes']);
 		}
 		$class = $this->config['use_date_dropdown'] ? 'DropdownField' : 'NumericField';
