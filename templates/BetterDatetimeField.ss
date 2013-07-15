@@ -1,9 +1,5 @@
 <% if $ShowDateFields %>
-	<% if $DateField.isComposite %>
-		$DateField
-	<% else %>
-		$DateField.FieldHolder
-	<% end_if %>
+	$DateField.FieldHolder
 <% end_if %>
 <% if $ShowTimeFields %>
 	$TimeField
