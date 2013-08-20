@@ -168,6 +168,7 @@ class BetterDatetimeField extends FormField {
 	public function setValue($value) {
 		if (is_array($value)) {
 			if($this->validateDateArray($value)) {
+				$this->setValue($this->valueObj); // set the array
 				// valueObj already set
 				return;
 			}
@@ -177,6 +178,14 @@ class BetterDatetimeField extends FormField {
 		}
 		elseif($value instanceof SS_Datetime) {
 			$this->valueObj = $value;
+			$this->value = array(
+				'Day' => $this->getDay(),
+				'Month' => $this->getMonth(),
+				'Year' => $this->getYear(),
+				'Hour' => $this->getHour(),
+				'Minute' => $this->getMinute(),
+				'Second' => $this->getSecond(),
+			);
 		}
 	}
 
