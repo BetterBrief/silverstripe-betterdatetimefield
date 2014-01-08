@@ -288,12 +288,12 @@ class BetterDatetimeField extends FormField {
 				$this->getName() . '[Hour]', 'Hour',
 				$this->createFieldRange('Hour'),
 				$this->getHour()
-			),
+			)->setEmptyString(ucfirst(_t('Date.HOUR', 'Hour'))),
 			DropdownField::create($this->getName() . '[Minute]',
 				'Minute',
 				$this->createFieldRange('Minute'),
 				$this->getMinute()
-			)
+			)->setEmptyString(ucfirst(_t('Date.MINUTE', 'Minute')))
 		)->addExtraClass($this->config['time_field_classes']);
 		if ($this->config['include_seconds']) {
 			$fields->push(DropdownField::create(
@@ -301,7 +301,7 @@ class BetterDatetimeField extends FormField {
 				'Second',
 				$this->createFieldRange('Second'),
 				$this->getSecond()
-			));
+			)->setEmptyString(ucfirst(_t('Date.SECOND', 'Second'))));
 		}
 		if (!$this->config['24_hr']) {
 			$fields->push(DropdownField::create(
@@ -338,6 +338,11 @@ class BetterDatetimeField extends FormField {
 			'Year' => $class::create($this->getName() . '[Year]', 'Year')
 				->setAttribute('placeholder', 'Year'),
 		);
+		if($class == 'DropdownField') {
+			foreach($fields as $name => $field) {
+				$field->setEmptyString(ucfirst(_t('Date.'.$name, $name)));
+			}
+		}
 		$composite = CompositeField::create()->addExtraClass(
 			$this->config['date_field_classes']
 		);
