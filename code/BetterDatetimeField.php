@@ -112,20 +112,26 @@ class BetterDatetimeField extends FormField
                 $day = !empty($value['Day']) ? $value['Day'] : null;
                 $month = !empty($value['Month']) ? $value['Month'] : null;
                 $year = !empty($value['Year']) ? $value['Year'] : null;
-                // Handle people entering "2nd" or "third", or "1st"
-                // and people entering Jan or January instead of 1 or 01
-                if (!is_numeric($day) || !is_numeric($month)) {
-                    $timeFormat = "$day $month $year";
-                }
-                if (!isset($timeFormat)) {
-                    $timeFormat = "$year-$month-$day";
-                }
-                $strToTime = strtotime($timeFormat);
-                if ($strToTime !== false) {
-                    list($year, $month, $day) = explode('-', date('Y-m-d', $strToTime), 3);
-                } else {
+                
+                if ($this->Required() && (empty($day) || empty($month) || empty($year))) {
                     $valid = false;
+                } else {
+                    // Handle people entering "2nd" or "third", or "1st"
+                    // and people entering Jan or January instead of 1 or 01
+                    if (!is_numeric($day) || !is_numeric($month)) {
+                            $timeFormat = "$day $month $year";
+                    }
+                    if (!isset($timeFormat)) {
+                            $timeFormat = "$year-$month-$day";
+                    }
+                    $strToTime = strtotime($timeFormat);
+                    if ($strToTime !== false) {
+                            list($year, $month, $day) = explode('-', date('Y-m-d', $strToTime), 3);
+                    } else {
+                            $valid = false;
+                    }
                 }
+
             } elseif (!empty($value['Date']) && $strToTime = strtotime($value['Date'])) {
                 list($year, $month, $day) = explode('-', date('Y-m-d', $strToTime), 3);
             } else {
