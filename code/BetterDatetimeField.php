@@ -112,7 +112,7 @@ class BetterDatetimeField extends FormField
                 $day = !empty($value['Day']) ? $value['Day'] : null;
                 $month = !empty($value['Month']) ? $value['Month'] : null;
                 $year = !empty($value['Year']) ? $value['Year'] : null;
-                
+
                 if ($this->Required() && (empty($day) || empty($month) || empty($year))) {
                     $valid = false;
                 } else {
@@ -209,7 +209,7 @@ class BetterDatetimeField extends FormField
         return $this->showTime;
     }
 
-    public function setShowTimeFields(bool $bool)
+    public function setShowTimeFields($bool)
     {
         $this->showTime = $bool;
         return $this;
@@ -220,7 +220,7 @@ class BetterDatetimeField extends FormField
         return $this->showDate;
     }
 
-    public function setShowDateFields(bool $bool)
+    public function setShowDateFields($bool)
     {
         $this->showDate = $bool;
         return $this;
