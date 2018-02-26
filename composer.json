@@ -4,7 +4,7 @@
 	"description": "SilverStripe 3 Better date/time field",
 	"keywords": ["silverstripe", "datetimefield", "datefield", "timefield"],
 	"homepage": "https://github.com/BetterBrief/silverstripe-betterdatetimefield",
-	"license": "BSD",
+	"license": "BSD-3-Clause",
 	"authors": [
 		{
 			"name": "Dan Hensby",
